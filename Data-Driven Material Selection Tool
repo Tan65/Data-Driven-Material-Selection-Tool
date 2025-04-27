@@ -1,0 +1,78 @@
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+import matplotlib.pyplot as plt
+
+# Step 1: Generate synthetic material data
+np.random.seed(42)
+
+n_samples = 200
+
+# Random features
+strength = np.random.uniform(200, 1000, n_samples)       # MPa
+weight = np.random.uniform(1, 10, n_samples)              # g/cm³
+recyclability = np.random.uniform(0.3, 1.0, n_samples)    # 0-1 scale
+cost = np.random.uniform(5, 50, n_samples)                # $/kg
+carbon_footprint = np.random.uniform(1, 10, n_samples)    # kg CO2 per kg material
+
+# Labels: "Good" material if high strength, low weight, high recyclability, low cost, low carbon
+labels = []
+for i in range(n_samples):
+    if (strength[i] > 600) and (weight[i] < 5) and (recyclability[i] > 0.7) and (cost[i] < 20) and (carbon_footprint[i] < 5):
+        labels.append('Good')
+    else:
+        labels.append('Bad')
+
+# Create DataFrame
+material_df = pd.DataFrame({
+    'Strength (MPa)': strength,
+    'Weight (g/cm³)': weight,
+    'Recyclability': recyclability,
+    'Cost ($/kg)': cost,
+    'Carbon Footprint (kg CO2/kg)': carbon_footprint,
+    'Label': labels
+})
+
+print(material_df.head())
+
+# Step 2: Train ML model
+X = material_df[['Strength (MPa)', 'Weight (g/cm³)', 'Recyclability', 'Cost ($/kg)', 'Carbon Footprint (kg CO2/kg)']]
+y = material_df['Label']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Step 3: Evaluate model
+y_pred = model.predict(X_test)
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+
+# Step 4: Predict new materials
+new_materials = pd.DataFrame({
+    'Strength (MPa)': np.random.uniform(200, 1000, 5),
+    'Weight (g/cm³)': np.random.uniform(1, 10, 5),
+    'Recyclability': np.random.uniform(0.3, 1.0, 5),
+    'Cost ($/kg)': np.random.uniform(5, 50, 5),
+    'Carbon Footprint (kg CO2/kg)': np.random.uniform(1, 10, 5)
+})
+
+predictions = model.predict(new_materials)
+
+new_materials['Recommendation'] = predictions
+print("\nNew Material Recommendations:")
+print(new_materials)
+
+# Step 5: Feature Importance
+importances = model.feature_importances_
+features = X.columns
+
+plt.figure(figsize=(8,5))
+plt.barh(features, importances, color='lightgreen')
+plt.xlabel('Importance')
+plt.title('Feature Importance in Material Selection')
+plt.grid(True)
+plt.show()
